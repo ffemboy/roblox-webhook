@@ -14,20 +14,27 @@ app.post("/webhook", (req, res) => {
 	const url = new URL(webhookurl);
 
 	const options = {
-		hostname: url.hostname,
-		path: url.pathname,
+		hostname: "discord.com",
+		path: url.pathname + url.search,
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
-			"Content-Length": Buffer.byteLength(body)
+			"Content-Length": Buffer.byteLength(body),
+			"User-Agent": "DiscordBot (https://discord.com, 1.0)"
 		}
 	};
 
 	const request = https.request(options, (response) => {
-		res.status(response.statusCode).json({ success: true });
+		let data = "";
+		response.on("data", chunk => data += chunk);
+		response.on("end", () => {
+			console.log("Discord response:", response.statusCode, data);
+			res.status(response.statusCode).json({ success: true, discordResponse: data });
+		});
 	});
 
 	request.on("error", (e) => {
+		console.error("Request error:", e.message);
 		res.status(500).json({ error: e.message });
 	});
 
