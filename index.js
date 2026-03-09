@@ -1,24 +1,38 @@
 const express = require("express");
-const fetch = require("node-fetch");
+const https = require("https");
 const app = express();
 
 app.use(express.json());
 
-app.post("/webhook", async (req, res) => {
+app.post("/webhook", (req, res) => {
 	const { webhookurl, payload } = req.body;
 	if (!webhookurl || !webhookurl.startsWith("https://discord.com/api/webhooks/")) {
 		return res.status(400).json({ error: "invalid webhook url" });
 	}
-	try {
-		const response = await fetch(webhookurl, {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify(payload)
-		});
-		res.status(response.status).json({ success: true });
-	} catch (e) {
+
+	const body = JSON.stringify(payload);
+	const url = new URL(webhookurl);
+
+	const options = {
+		hostname: url.hostname,
+		path: url.pathname,
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+			"Content-Length": Buffer.byteLength(body)
+		}
+	};
+
+	const request = https.request(options, (response) => {
+		res.status(response.statusCode).json({ success: true });
+	});
+
+	request.on("error", (e) => {
 		res.status(500).json({ error: e.message });
-	}
+	});
+
+	request.write(body);
+	request.end();
 });
 
 app.listen(process.env.PORT || 3000, () => console.log("proxy running"));
