@@ -1,3 +1,9 @@
+const express = require("express");
+const fetch = require("node-fetch");
+const app = express();
+
+app.use(express.json());
+
 app.post("/webhook", async (req, res) => {
 	const { webhookurl, payload } = req.body;
 	if (!webhookurl || !webhookurl.startsWith("https://discord.com/api/webhooks/")) {
@@ -14,3 +20,5 @@ app.post("/webhook", async (req, res) => {
 		res.status(500).json({ error: e.message });
 	}
 });
+
+app.listen(process.env.PORT || 3000, () => console.log("proxy running"));
